@@ -42,17 +42,24 @@ exports.validateUserJWTToken = functions.https.onRequest((req, res) => {
     const token = authorizationHeader.split("Bearer ")[1];
 
     try {
+      let userData;
       const decodedToken = await admin.auth().verifyIdToken(token);
       if (decodedToken) {
         const docRef = db.collection("users").doc(decodedToken.uid);
         const doc = await docRef.get();
         if (!doc.exists) {
           const userRef = await db.collection("users").doc(decodedToken.uid);
+          userData = decodedToken;
+          userData.role = "member";
           await userRef.set(decodedToken);
+          return res
+            .status(200)
+            .json({ message: "token is valid", user: userData });
+        } else {
+          return res
+            .status(200)
+            .json({ message: "token is valid", user: doc.data() });
         }
-        return res
-          .status(200)
-          .json({ message: "token is valid", user: decodedToken });
       }
     } catch (error) {
       console.error("Error Validating Token:", error);
@@ -60,3 +67,5 @@ exports.validateUserJWTToken = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+// function to save data on the cloud in firebase

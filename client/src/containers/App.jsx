@@ -4,11 +4,18 @@ import Layout from "../layout/Layout";
 import AdminLayout from "../layout/AdminLayout";
 import AdminHome from "../pages/admin/AdminHome";
 import UserProfle from "../pages/UserProfle";
-import AdminUser from "../pages/admin/adminUser";
 import AuthLayout from "../layout/AuthLayout";
 import Authentication from "../pages/Authentication";
-import { useEffect } from "react";
-import { auth } from "../config/firebase.config";
+// import { useEffect } from "react";
+// import { auth } from "../config/firebase.config";
+import { QueryClientProvider, QueryClient } from "react-query";
+import { ReactQueryDevtools } from "react-query/devtools";
+
+import { ToastContainer } from "react-toastify";
+import AdminUsers from "../pages/admin/AdminUsers";
+import AdminApps from "../pages/admin/AdminApps";
+
+export const queryClient = new QueryClient();
 
 export const router = createBrowserRouter([
   {
@@ -28,8 +35,12 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <AdminHome /> },
       {
-        path: "user",
-        element: <AdminUser />,
+        path: "users",
+        element: <AdminUsers />,
+      },
+      {
+        path: "apps",
+        element: <AdminApps />,
       },
     ],
   },
@@ -46,19 +57,18 @@ export const router = createBrowserRouter([
 ]);
 
 function App() {
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (userCred) => {
-      if (userCred) {
-        userCred.getIdToken().then((token) => {
-          console.log(token);
-        });
-      }
-    });
+  // useEffect(() => {
 
-    return () => unsubscribe();
-  }, [auth]);
+  //   return () => unsubscribe();
+  // }, [auth]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+      <ToastContainer position="top-right" theme="dark" />
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
 }
 
 export default App;

@@ -1,30 +1,48 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Two } from "../assets";
 import { FcGoogle } from "react-icons/fc";
-import {
-  getRedirectResult,
-  GoogleAuthProvider,
-  signInWithRedirect,
-  getAuth,
-  signInWithPopup,
-} from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../config/firebase.config";
+import { useUser } from "../hooks/users";
+import { useNavigate } from "react-router-dom";
 
 const Authentication = () => {
   const googleProvider = new GoogleAuthProvider();
 
-  const handleLogin = useCallback(async () => {
+  const navigate = useNavigate();
+
+  const { data, isLoading, isError, refetch } = useUser();
+
+  useEffect(() => {
+    if (!isLoading && data) {
+      console.log(data, "DATA");
+      navigate("/", { replace: true });
+    }
+  }, [isLoading, data]);
+
+  if (isLoading) {
+    return <p>Loading...</p>;
+  }
+
+  // const handleLogin = async () => {
+  //   try {
+  //     //! works on prod only
+  //     // await signInWithRedirect(auth, googleProvider);
+  //     const userCred = await signInWithPopup(auth, googleProvider);
+  //   } catch (error) {
+  //     console.error("Error During Login: ", error);
+  //   }
+  // };
+
+  const handleLogin = async () => {
     try {
-      //! works on prod only
-      // await signInWithRedirect(auth, googleProvider);
-      const userCred = await signInWithPopup(auth, googleProvider);
-      if (userCred) {
-        console.log(userCred, "userCred");
-      }
+      await signInWithPopup(auth, googleProvider);
+      // Manually refetch user data after successful login
+      await refetch();
     } catch (error) {
       console.error("Error During Login: ", error);
     }
-  }, [auth]);
+  };
 
   return (
     <div
