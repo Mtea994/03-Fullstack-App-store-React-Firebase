@@ -1,5 +1,6 @@
 import { auth } from "../config/firebase.config";
 import { BASE_URL } from "../utility/URL";
+import { toast } from "react-toastify";
 
 // export const getAuthenticatedUser = () => {
 //   // let userData;
@@ -98,3 +99,19 @@ export const getAuthenticatedUser = () => {
 //     throw new Error("User is not Authenticated");
 //   }
 // };
+
+export const saveAppDataToCloud = async (data) => {
+  try {
+    const res = await fetch(`${BASE_URL}/createNewApp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    const resData = await res.json();
+    return resData;
+  } catch (error) {
+    toast.error(`Error: ${error}`);
+  }
+};

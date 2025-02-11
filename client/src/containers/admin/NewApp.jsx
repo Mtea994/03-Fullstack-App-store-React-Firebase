@@ -2,41 +2,36 @@ import React, { useState } from "react";
 import InputContainer from "../../components/admin/InputContainer";
 
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { saveAppDataToCloud } from "../../api";
+import { toast } from "react-toastify";
 
 function NewAppForm() {
   const [formData, setFormData] = useState({
     title: "",
     company: "",
-    appIcon: "",
+    appIcon: null,
     reviews: "",
     totalReviews: "",
     downloads: "",
-    cover: "",
+    cover: null,
     banners: [],
     shortDescription: "", // textarea
   });
 
   const storage = getStorage();
 
-  async function uploadFile(file, path) {
-    const fileRef = ref(storage, `images/${path}/${file.name}`);
-    await uploadBytes(fileRef, file);
-    return getDownloadURL(fileRef);
-  }
-
-  async function inputHandler(event, identifier, index) {
-    console.log(event, "EVENT");
+  async function inputHandler(event, identifier) {
     if (identifier === "banners") {
-      // const filesArray = Array.from(event.target.files).map((file, i) => ({
-      //   id: index + i, // or use another unique id strategy
-      //   uri: URL.createObjectURL(file), // or simply `file` if you want to store the File object
-      // }));
-      const filesArray = await Promise.all(
-        Array.from(event.target.files).map(async (file, i) => {
-          const fileUrl = await uploadFile(file, "banners");
-          return { id: index + i, uri: fileUrl };
-        })
-      );
+      const filesArray = Array.from(event.target.files).map((file) => ({
+        id: crypto.randomUUID(), // or use another unique id strategy
+        file: file, // or simply `file` if you want to store the File object
+      }));
+      // const filesArray = await Promise.all(
+      //   Array.from(event.target.files).map(async (file, i) => {
+      //     const fileUrl = await uploadFile(file, "banners");
+      //     return { id: index + i, uri: fileUrl };
+      //   })
+      // );
 
       setFormData((previousData) => ({
         ...previousData,
@@ -45,30 +40,75 @@ function NewAppForm() {
     } else if (identifier === "cover" || identifier === "appIcon") {
       // Assuming these are single file inputs.
       const file = event.target.files[0];
+      if (file) {
+        setFormData((previousData) => ({
+          ...previousData,
+          [identifier]: { file: file },
+        }));
+      }
       // if (file) {
-      //   const fileUrl = URL.createObjectURL(file);
+      //   const fileUrl = await uploadFile(file, identifier);
       //   setFormData((previousData) => ({
       //     ...previousData,
       //     [identifier]: fileUrl,
       //   }));
       // }
-      if (file) {
-        const fileUrl = await uploadFile(file, identifier);
-        setFormData((previousData) => ({
-          ...previousData,
-          [identifier]: fileUrl,
-        }));
-      }
     } else {
       const value = event.target.value;
       setFormData((previousData) => ({ ...previousData, [identifier]: value }));
     }
   }
 
-  console.log(formData, "Data");
+  async function uploadFile(file, path) {
+    const fileRef = ref(storage, `images/${path}/${file.name}`);
+    await uploadBytes(fileRef, file);
+    return getDownloadURL(fileRef);
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    // Upload images only when form is submitted
+    const uploadedImages = {};
+
+    if (formData.cover?.file) {
+      uploadedImages.cover = await uploadFile(formData.cover.file, "cover");
+    }
+    if (formData.appIcon?.file) {
+      uploadedImages.appIcon = await uploadFile(
+        formData.appIcon.file,
+        "appIcon"
+      );
+    }
+    if (formData.banners.length > 0) {
+      const uploadedBanners = await Promise.all(
+        formData.banners.map(async (banner) => ({
+          id: banner.id,
+          uri: await uploadFile(banner.file, "banners"),
+        }))
+      );
+      uploadedImages.banners = uploadedBanners;
+    }
+
+    // Update formData with Firebase URLs
+    setFormData((prev) => ({
+      ...prev,
+      ...uploadedImages,
+    }));
+
+    const id = `${Date.now()}`;
+
+    await saveAppDataToCloud({ _id: id, ...formData, ...uploadedImages });
+    toast.success("Data Saved in the Cloud");
+
+    console.log("Final form data:", { ...formData, ...uploadedImages });
+    alert("Form submitted successfully!");
+  }
+
+  // console.log(formData, "Data");
 
   return (
-    <form className="w-full flex flex-col gap-2">
+    <form className="w-full flex flex-col gap-2" onSubmit={handleSubmit}>
       {Object.keys(formData).map((el, index) => {
         if (el !== "shortDescription") {
           const fileTypes = ["cover", "banners", "appIcon"];
@@ -78,7 +118,7 @@ function NewAppForm() {
             <div>
               <label>{el}</label>
               <InputContainer
-                placeholder={`${el}`}
+                placeholder={el}
                 key={index}
                 // type={inputType}
                 type={fileTypes.includes(el) ? "file" : "text"}
@@ -91,19 +131,22 @@ function NewAppForm() {
                 onChange={(event) => inputHandler(event, el, index)}
                 value={fileTypes.includes(el) ? undefined : formData[el]}
               />
-              {fileTypes.includes(el) && formData[el].length > 0 && (
+              {fileTypes.includes(el) && formData[el] && (
                 <div className="flex gap-1 py-2 px-2">
-                  {el === "banners" && formData.banners.length > 0 ? (
-                    formData.banners.map((el) => (
-                      <div className=" w-16 h-auto">
-                        <img src={el?.uri} />
-                      </div>
-                    ))
-                  ) : (
-                    <div className=" w-16 h-auto">
-                      <img src={formData[el]} />
-                    </div>
-                  )}
+                  {el === "banners"
+                    ? formData.banners.map((el) => (
+                        <div className=" w-16 h-auto">
+                          <img src={el?.uri} />
+                        </div>
+                      ))
+                    : formData[el]?.file && (
+                        <div className="w-16 h-auto">
+                          <img
+                            src={URL.createObjectURL(formData[el].file)}
+                            alt={el}
+                          />
+                        </div>
+                      )}
                 </div>
               )}
             </div>
@@ -116,6 +159,8 @@ function NewAppForm() {
               placeholder="enter description"
               className="w-full bg-textPrimary rounded-md border outline-none shadow-sm border-third 
       text-lg font-semibold font-sans text-secondary px-2"
+              onChange={(event) => inputHandler(event, el)}
+              value={formData[el]}
             />
           );
         }
@@ -131,6 +176,19 @@ function NewAppForm() {
         <button
           type="reset"
           className="px-8 py-2 bg-secondary rounded-md shadow-sm cursor-pointer text-lg font-bold text-textSecondary hover:bg-heroPrimary"
+          onClick={() =>
+            setFormData({
+              title: "",
+              company: "",
+              appIcon: null,
+              reviews: "",
+              totalReviews: "",
+              downloads: "",
+              cover: null,
+              banners: [],
+              shortDescription: "",
+            })
+          }
         >
           Clear
         </button>

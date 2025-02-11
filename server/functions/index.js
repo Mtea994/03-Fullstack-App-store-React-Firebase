@@ -69,3 +69,18 @@ exports.validateUserJWTToken = functions.https.onRequest((req, res) => {
 });
 
 // function to save data on the cloud in firebase
+
+exports.createNewApp = functions.https.onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    try {
+      const data = req.body;
+      const docRef = db.collection("apps").doc(req.body._id);
+      await docRef.set(data);
+      // retrieve the data from the cloud
+      const appDetail = await docRef.get();
+      res.status(200).json({ _id: docRef.id, data: appDetail.data() });
+    } catch (error) {
+      return res.status(401).json({ error: error.message });
+    }
+  });
+});
