@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Logo } from "../../assets";
 import { useUser } from "../../hooks/users";
 import UserProfile from "./UserProfile";
+import MainLoader from "../loaders/MainLoader";
 
 const AdminHeader = () => {
   const { data: userData, isLoading, isError } = useUser();
@@ -16,7 +17,7 @@ const AdminHeader = () => {
   }, [isLoading, userData]);
 
   if (isLoading) {
-    return <p>Loading...</p>;
+    return <MainLoader />;
   }
 
   return (

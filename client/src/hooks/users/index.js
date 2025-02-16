@@ -1,5 +1,5 @@
 import { useQuery } from "react-query";
-import { getAuthenticatedUser } from "../../api";
+import { getAllUsersFromCloud, getAuthenticatedUser } from "../../api";
 import { toast } from "react-toastify";
 
 export const useUser = () => {
@@ -61,3 +61,22 @@ export const useUser = () => {
 
 //   return { data, isLoading, isError, refetch };
 // };
+
+export const useUsers = () => {
+  const { data, isLoading, isError, refetch } = useQuery(
+    "users",
+    async () => {
+      try {
+        const users = await getAllUsersFromCloud();
+        return users;
+      } catch (error) {
+        toast.error(error);
+      }
+    },
+    {
+      refetchOnWindowFocus: false,
+    }
+  );
+
+  return { data, isLoading, isError, refetch };
+};

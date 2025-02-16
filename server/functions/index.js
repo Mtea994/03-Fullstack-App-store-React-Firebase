@@ -20,6 +20,7 @@
 
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const { error } = require("firebase-functions/logger");
 
 const cors = require("cors")({ origin: true });
 
@@ -79,6 +80,76 @@ exports.createNewApp = functions.https.onRequest(async (req, res) => {
       // retrieve the data from the cloud
       const appDetail = await docRef.get();
       res.status(200).json({ _id: docRef.id, data: appDetail.data() });
+    } catch (error) {
+      return res.status(401).json({ error: error.message });
+    }
+  });
+});
+
+// get all the apps
+exports.getAllApps = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const apps = [];
+      // onSnapShot Real time changes listener
+
+      const unsubscribe = db
+        .collection("apps")
+        .orderBy("timeStamp", "desc")
+        .onSnapshot((snapshot) => {
+          apps.length = 0;
+
+          snapshot.forEach((doc) => {
+            apps.push(doc.data());
+          });
+          res.json(apps);
+        });
+      res.on("finish", unsubscribe);
+    } catch (error) {
+      return res.status(402).json({ error: error.message });
+    }
+  });
+});
+
+// Delete an app by id
+
+exports.deleteApp = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { id } = req.query;
+      if (!id) {
+        return res.status(400).json({ error: "App ID is Missing!" });
+      }
+
+      await db.collection("apps").doc(id).delete();
+      return res.status(200).json({ message: "App Deleted" });
+    } catch (error) {
+      return res.status(402).json({ error: error.message });
+    }
+  });
+});
+
+exports.getAllUsers = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const snapshot = await db.collection("users").get();
+      const users = [];
+      snapshot.forEach((doc) => users.push(doc.data()));
+      return res.status(200).json(users);
+    } catch (error) {
+      return res.status(402).json;
+    }
+  });
+});
+
+// updateUserData
+
+exports.updateUserData = functions.https.onRequest(async (req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { _id, ...data } = req.body;
+      await db.collection("users").doc(_id).update(data);
+      return res.status(200).json({ message: "User Updated" });
     } catch (error) {
       return res.status(401).json({ error: error.message });
     }

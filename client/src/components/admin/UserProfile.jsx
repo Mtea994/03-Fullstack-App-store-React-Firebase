@@ -79,7 +79,7 @@ const UserProfile = ({ userData }) => {
                         className="px-3 py-2 rounded-4xl hover:bg-heroPrimary hover:text-white "
                         key={menu.id}
                       >
-                        <NavLink>{menu.menu}</NavLink>
+                        <NavLink to={menu.uri}>{menu.menu}</NavLink>
                       </motion.li>
                     )) ||
                     (!menu?.isAdmin && (
@@ -87,7 +87,7 @@ const UserProfile = ({ userData }) => {
                         className="px-3 py-2 hover:bg-heroPrimary !important hover:text-white rounded-4xl"
                         key={menu.id}
                       >
-                        <NavLink>{menu.menu}</NavLink>
+                        <NavLink to={menu.uri}>{menu.menu}</NavLink>
                       </motion.li>
                     ))
                   );

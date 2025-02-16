@@ -115,3 +115,44 @@ export const saveAppDataToCloud = async (data) => {
     toast.error(`Error: ${error}`);
   }
 };
+export const updateUserData = async (data) => {
+  try {
+    const res = await fetch(`${BASE_URL}/updateUserData`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+    const resData = await res.json();
+    return resData;
+  } catch (error) {
+    toast.error(`Error: ${error}`);
+  }
+};
+
+export const getAllAppsFromCloud = async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/getAllApps`);
+    if (!res.ok) {
+      toast.error("Failed to load apps");
+    }
+    const resData = await res.json();
+    return resData;
+  } catch (error) {
+    toast.error(`Error: ${error}`);
+  }
+};
+
+export const getAllUsersFromCloud = async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/getAllUsers`);
+    if (!res.ok) {
+      toast.error("Failed to load Users");
+    }
+    const resData = await res.json();
+    return resData;
+  } catch (error) {
+    toast.error(`Error: ${error}`);
+  }
+};
